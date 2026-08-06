@@ -4,64 +4,92 @@ from pydantic import BaseModel
 
 APP = FastAPI()
 
-class livro(BaseModel):
+#-------livro-----#
+class Livro(BaseModel):
     id: int
     titulo: str
-    autor: bool = True
+    autor: str
 
 
-@APP.get('/')
+    #-----Banco de dados-----#
+livros = [
+    Livro(id=1, titulo="Dom Casmurro", autor="Machado de Assis"),
+    Livro(id=2, titulo="O Pequeno Príncipe", autor="Antoine de Saint-Exupéry"),
+]
 
-def raiz():
+
+# ------------------- RAIZ -----------------
+@APP.get("/livros")
+def listar_livros():
     return {'Mensagem':'API da Biblioteca no Ar!'}
 
-@APP.get('/livros')
-def livros():
-    return {'Mensagem':'Lista de livros disponiveis.'} 
 
-
-@APP.get('/livros/{id}')
-def livros_id(id: int):
-    return {'Mensagem':f'Livro com id {id}.'}
-
-@APP.get('/autores/')
-def autores():
-    return {'Mensagem':'Lista de autores disponiveis.'}
-
-@APP.get('/autores/{id}')
-def autores_id(id:int):
-    return {'Mensagem':f'Autor com id {id}.'}
-
-class livro:
-    def __init__(self, id:int, titulo:str, autor:str):
-        self.id = id
-        self.titulo = titulo
-        self.autor = autor
-
-    def __str__(self):
-        return f'livro(id={self.id}, titulo={self.titulo}, autor={self.autor})'
-    
-def get_livro_by_id(id:int):
-
-    for  i in range(1,10):
-        if i == id:
-            livro = livro(id=i, titulo=f'Titulo {i}', autor=f'Autor {i}')
+@APP.get("/livros/{id}")
+def buscar_livro(id: int):
+    for livro in livros:
+        if livro.id == id:
             return livro
-        raise HTTPException(status_code=404, detail=f'livro com id {id} não encontrado')
+
+        raise HTTPException(
+        status_code=404,
+        detail=f"Livro com id {id} não encontrado."
+    )
+
+#------------------- AUTORES -------------------#
+
+
+@APP.get("/autores")
+def listar_autores():
+    return [livro.autor for livro in livros]
+
+@APP.get("/autores/{id}")
+def buscar_autor(id: int):
+    for livro in livros:
+        if livro.id == id:
+            return {"autor": livro.autor}
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"Autor do livro {id} não encontrado."
+    )
+
+
 
 #---------------POST-----------------#
 
-def post_livro(livro: livro):
-    novo= livro.model_dump()
-    novo['id'] = max([livro.id for livro in livros], default=0) + 1
-    livros.append(novo)
-    return {'Mensagem': f'livro com id {livro.id} adicionado com sucesso.'}
+
+@APP.post("/livros")
+def post_livro(livro: Livro):
+    livros.append(livro)
+
+    return {
+        'Mensagem': f'Livro com id {livro.id} adicionado com sucesso.'
+    }
 
 #----------------PUT-----------------#
 
-def atualizar_livro(id:int, livro: livro):
+
+@APP.put("/livros/{id}")
+def atualizar_livro(id: int, livro: Livro):
     for i, l in enumerate(livros):
         if l.id == id:
             livros[i] = livro
-            return {'Mensagem': f'livro com id {id} atualizado com sucesso.'}
-    raise HTTPException(status_code=404, detail=f'livro com id {id} não encontrado')
+
+            return {'Mensagem': f'Livro com id {id} atualizado com sucesso.'}
+
+    raise HTTPException(status_code=404,
+        detail=f'Livro com id {id} não encontrado')
+
+
+#----------------DELETE-----------------#
+
+@APP.delete("/livros/{id}")
+def deletar_livro(id: int):
+    for i, l in enumerate(livros):
+        if l.id == id:
+            del livros[i]
+
+            return {'Mensagem': f'Livro com id {id} removido com sucesso.'}
+
+    raise HTTPException(status_code=404,
+        detail=f'Livro com id {id} não encontrado')
