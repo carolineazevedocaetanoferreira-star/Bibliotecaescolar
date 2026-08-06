@@ -1,7 +1,14 @@
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 
 APP = FastAPI()
+
+class livro(BaseModel):
+    id: int
+    titulo: str
+    autor: bool = True
+
 
 @APP.get('/')
 
@@ -41,3 +48,20 @@ def get_livro_by_id(id:int):
             livro = livro(id=i, titulo=f'Titulo {i}', autor=f'Autor {i}')
             return livro
         raise HTTPException(status_code=404, detail=f'livro com id {id} não encontrado')
+
+#---------------POST-----------------#
+
+def post_livro(livro: livro):
+    novo= livro.model_dump()
+    novo['id'] = max([livro.id for livro in livros], default=0) + 1
+    livros.append(novo)
+    return {'Mensagem': f'livro com id {livro.id} adicionado com sucesso.'}
+
+#----------------PUT-----------------#
+
+def atualizar_livro(id:int, livro: livro):
+    for i, l in enumerate(livros):
+        if l.id == id:
+            livros[i] = livro
+            return {'Mensagem': f'livro com id {id} atualizado com sucesso.'}
+    raise HTTPException(status_code=404, detail=f'livro com id {id} não encontrado')
